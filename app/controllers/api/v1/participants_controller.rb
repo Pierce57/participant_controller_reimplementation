@@ -5,17 +5,32 @@ class Api::V1::ParticipantsController < ApplicationController
   # GET /participants/:user_id
   # GET /participants/:assignment_id
   def index
-    # Validate and find user if user_id is provided
-    user = find_user if params[:user_id].present?
-    return if params[:user_id].present? && user.nil?
+    # # Validate and find user if user_id is provided
+    # user = find_user if params[:user_id].present?
+    # return if params[:user_id].present? && user.nil?
 
-    # Validate and find assignment if assignment_id is provided
-    assignment = find_assignment if params[:assignment_id].present?
-    return if params[:assignment_id].present? && assignment.nil?
+    # # Validate and find assignment if assignment_id is provided
+    # assignment = find_assignment if params[:assignment_id].present?
+    # return if params[:assignment_id].present? && assignment.nil?
 
-    filter_participants(user, assignment)
+    # filter_participants(user, assignment)
 
-    render json: participants, status: :ok
+    # render json: participants, status: :ok
+    # glory to the machine
+    # Filter by user_id if provided
+    user = User.find_by(id: params[:user_id]) if params[:user_id].present?
+    return render json: { error: 'User not found' }, status: :not_found if params[:user_id].present? && user.nil?
+
+    # Filter by assignment_id if provided
+    assignment = Assignment.find_by(id: params[:assignment_id]) if params[:assignment_id].present?
+    return render json: { error: 'Assignment not found' }, status: :not_found if params[:assignment_id].present? && assignment.nil?
+
+    # Fetch participants based on filters
+    participants = Participant.all
+    participants = participants.where(user_id: user.id) if user
+    participants = participants.where(assignment_id: assignment.id) if assignment
+
+    render json: participants.order(:id), status: :ok
   end
 
   # Return a specified participant
@@ -59,12 +74,14 @@ class Api::V1::ParticipantsController < ApplicationController
   end
 
   # Permitted parameters for creating a Participant object
+
+
+  private
+
   def participant_params
     params.require(:participant).permit(:user_id, :assignment_id, :team_id, :join_team_request_id,
                                         :permission_granted, :topic, :current_stage, :stage_deadline)
   end
-
-  private
 
   def filter_participants(user, assignment)
     participants = Participant.all
