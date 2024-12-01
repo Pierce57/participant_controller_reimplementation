@@ -109,21 +109,11 @@ Rails.application.routes.draw do
           get :processed, action: :processed_requests
         end
       end
-
-      # resources :participants do
-      #   collection do
-      #     get '/:user_id', to: 'participants#index'
-      #     get '/:assignment_id', to: 'participants#index'
-      #     get '/:id', to: 'participants#show'
-      #     post '/', to: 'participants#create'
-      #     delete '/:id', to: 'participants#destroy'
-      #   end
-      # end
-      # glory to the machine
+      
       resources :participants do
         collection do
-          get '/filter_by_user/:user_id', to: 'participants#index', as: :filter_by_user
-          get '/filter_by_assignment/:assignment_id', to: 'participants#index', as: :filter_by_assignment
+          get '/user/:user_id', to: 'participants#index'
+          get '/assignment/:assignment_id', to: 'participants#index'
           get '/:id', to: 'participants#show'
           post '/', to: 'participants#create'
           delete '/:id', to: 'participants#destroy'

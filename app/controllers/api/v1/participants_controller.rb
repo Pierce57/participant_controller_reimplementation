@@ -1,36 +1,25 @@
 class Api::V1::ParticipantsController < ApplicationController
-  # Return a list of participants for a user or assignment
+  # Return a list of participants for a given user or assignment
   # params - user_id
   #          assignment_id
   # GET /participants/:user_id
   # GET /participants/:assignment_id
   def index
-    # # Validate and find user if user_id is provided
-    # user = find_user if params[:user_id].present?
-    # return if params[:user_id].present? && user.nil?
+    # Validate and find user if user_id is provided
+    user = find_user if params[:user_id].present?
+    return if params[:user_id].present? && user.nil?
 
-    # # Validate and find assignment if assignment_id is provided
-    # assignment = find_assignment if params[:assignment_id].present?
-    # return if params[:assignment_id].present? && assignment.nil?
+    # Validate and find assignment if assignment_id is provided
+    assignment = find_assignment if params[:assignment_id].present?
+    return if params[:assignment_id].present? && assignment.nil?
 
-    # filter_participants(user, assignment)
+    participants = filter_participants(user, assignment)
 
-    # render json: participants, status: :ok
-    # glory to the machine
-    # Filter by user_id if provided
-    user = User.find_by(id: params[:user_id]) if params[:user_id].present?
-    return render json: { error: 'User not found' }, status: :not_found if params[:user_id].present? && user.nil?
-
-    # Filter by assignment_id if provided
-    assignment = Assignment.find_by(id: params[:assignment_id]) if params[:assignment_id].present?
-    return render json: { error: 'Assignment not found' }, status: :not_found if params[:assignment_id].present? && assignment.nil?
-
-    # Fetch participants based on filters
-    participants = Participant.all
-    participants = participants.where(user_id: user.id) if user
-    participants = participants.where(assignment_id: assignment.id) if assignment
-
-    render json: participants.order(:id), status: :ok
+    if participants.nil?
+      render json: participants.errors, status: :unprocessable_entity
+    else
+      render json: participants, status: :ok
+    end
   end
 
   # Return a specified participant
@@ -39,7 +28,11 @@ class Api::V1::ParticipantsController < ApplicationController
   def show
     participant = Participant.find(params[:id])
 
-    render json: participant, status: :ok
+    if participant.nil?
+      render json: participant.errors, status: :unprocessable_entity
+    else
+      render json: participant, status: :created
+    end
   end
 
   # Create a participant
@@ -74,14 +67,12 @@ class Api::V1::ParticipantsController < ApplicationController
   end
 
   # Permitted parameters for creating a Participant object
-
-
-  private
-
   def participant_params
     params.require(:participant).permit(:user_id, :assignment_id, :team_id, :join_team_request_id,
                                         :permission_granted, :topic, :current_stage, :stage_deadline)
   end
+
+  private
 
   def filter_participants(user, assignment)
     participants = Participant.all
@@ -91,13 +82,15 @@ class Api::V1::ParticipantsController < ApplicationController
   end
 
   def find_user
-    user = User.find_by(id: participant_params[:user_id])
+    user_id = params[:user_id]
+    user = User.find_by(id: user_id)
     render json: { error: 'User not found' }, status: :not_found unless user
     user
   end
 
   def find_assignment
-    assignment = Assignment.find_by(id: participant_params[:assignment_id])
+    assignment_id = params[:assignment_id]
+    assignment = Assignment.find_by(id: assignment_id)
     render json: { error: 'Assignment not found' }, status: :not_found unless assignment
     assignment
   end
